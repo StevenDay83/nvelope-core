@@ -1,0 +1,18 @@
+{
+  "name": "nvelope-core",
+  "version": "1.0.0",
+  "description": "nvelope mail library",
+  "license": "MIT",
+  "author": "Steven Day",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "node-forge": "^1.3.3",
+    "nostr-tools": "^2.19.4",
+    "tiny-worker": "^2.3.0",
+    "ws": "^8.19.0"
+  }
+}
