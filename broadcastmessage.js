@@ -2,10 +2,10 @@ const PlainText = "plaintext";
 const MarkDown = "md";
 const HTML = "html";
 
-const DEFAULT = '0';
-const LIST_SERVE = '1';
+const DEFAULT = 0;
+const LIST_SERVE = 1;
 
-const { randomBytes, scryptSync } = require('crypto');
+const crypto = require('crypto');
 
 module.exports.BroadcastMessage = class BroadcastMessage {
     constructor(){
@@ -14,19 +14,23 @@ module.exports.BroadcastMessage = class BroadcastMessage {
         this.messageContent[MarkDown] = "";
         this.messageContent[HTML] = "";
 
-        this.messageType = DEFAULT;
+        this.broadcastMessageType = DEFAULT;
         this.replyTo = "";
         this.subjectLine = "";
 
         this.externalReferences = [];
 
-        this.pubkey;
-        this.preSharedKeyPassword = '';
-        this.pskSaltHex = '';
-        this.preSharedKeyValue;
+        this.authorPubkey;
+        this.password;
+        this.passwordSalt;
+        this.preSharedKey;
         this.topic = '';
+    }
 
-
+    setAuthorPubKey(thisPubKey){
+        if (thisPubKey && typeof(thisPubKey) === 'string' && this.isHexValue(thisPubKey)){
+            this.authorPubkey = thisPubKey;
+        }
     }
 
     setContent(thisContent, contentType = PlainText){
@@ -60,15 +64,71 @@ module.exports.BroadcastMessage = class BroadcastMessage {
         }
     }
 
-    setPresharedKeyPassphrase(pskText, pskSaltHexString){
-        if (pskText && typeof(pskText) === 'string'){
-            this.preSharedKeyPassword = pskText;
-            this.pskSaltHex = (pskSaltHexString && typeof(pskSaltHexString) === 'string' && this.isHexValue(pskSaltHexString)) ?
-            pskSaltHexString : pskSaltHexString = randomBytes(32).toString('hex');
+    setPresharedKeyWithPassphrase(thisPassword, thisSalt){
+        if (thisPassword && typeof(thisPassword) === 'string' && thisPassword.length > 0){
+            this.password = thisPassword;
+
+            this.passwordSalt = (thisSalt && typeof(thisSalt) === 'string' && thisSalt.length == 64 && this.isHexValue(thisSalt)) ? thisSalt : crypto.randomBytes(32).toString('hex');
+
+            if (!this.generatePresharedKey()){
+                this.password = '';
+                this.passwordSalt = '';
+            }
         }
     }
 
+    generatePresharedKey(){
+        var isSuccess = true;
+        try {
+            if (this.password && this.passwordSalt){
+                this.preSharedKey = crypto.scryptSync(this.password, Buffer.from(this.passwordSalt, 'hex'), 32);
+            } else {
+                isSuccess = false;
+            }
+        } catch (e) {
+            isSuccess = false;
+        }
+        return isSuccess;
+    }
+
     isHexValue(hexText){
-        return hexText != undefined && typeof(hexText) === 'string' ? Buffer.from(hexText, 'hex').length > 0 : false;
+        return hexText != (undefined && typeof(hexText) === 'string') ? Buffer.from(hexText, 'hex').length > 0 : false;
+    }
+
+    generateEmailMessage(){
+        var formattedMessage = {};
+
+        formattedMessage["broadcastMessageType"] = this.broadcastMessageType != undefined && !isNaN(this.broadcastMessageType) ? this.broadcastMessageType : DEFAULT;
+        
+        if (this.replyTo && this.replyTo.length > 0){
+            formattedMessage["replyTo"] = this.replyTo;
+        }
+
+        if (this.subjectLine && this.subjectLine.length > 0){
+            formattedMessage["subjectLine"] = this.subjectLine;
+        }
+
+        if (this.authorPubkey){
+            formattedMessage["author"] = this.authorPubkey;
+        }
+
+        var messageTypes = Object.keys(this.messageContent);
+        if (messageTypes.length > 0){
+            formattedMessage["messageType"] = {};
+            for (var i = 0; i < messageTypes.length; i++){
+                var thisMessageType = messageTypes[i];
+                var thisMessageTypeContent = this.messageContent[thisMessageType];
+
+                if (thisMessageTypeContent.length > 0){
+                    formattedMessage["messageType"][thisMessageType] = Buffer.from(thisMessageTypeContent).toString('base64');
+                }
+            }
+        }
+
+        if (this.externalReferences.length > 0){
+            formattedMessage["external_references"] = this.externalReferences;
+        }
+
+        return formattedMessage;
     }
 }
