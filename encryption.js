@@ -1,10 +1,11 @@
-const { generateKeyPairSync, publicEncrypt, privateDecrypt, createPublicKey } = require('crypto');
+const { generateKeyPairSync, publicEncrypt, privateDecrypt, createPublicKey, createCipheriv, createDecipheriv, scryptSync, randomBytes } = require('crypto');
 const forge = require('node-forge');
 const { monitorEventLoopDelay } = require('perf_hooks');
 
 const DEFAULT_CHUNK = 214;
+const SYMMETRIC_CIHPER = 'aes-256-cbc';
 
-function encryptData(textData, publicKeyPEM){
+function encryptDataPublicKey(textData, publicKeyPEM){
     var encryptedDataBase64 = [];
     
     if (textData && typeof(textData) === 'string' && 
@@ -30,7 +31,7 @@ publicKeyPEM && typeof(publicKeyPEM) === 'string'){
     return encryptedDataBase64;
 }
 
-function decryptData(encryptedDataBase64Array, privateKeyPEM){
+function decryptDataPrivateKey(encryptedDataBase64Array, privateKeyPEM){
     // Steps
     // Step 1 - Validate data, PrivKeyPEM and KeySize (2048+)
     // Step 2 - Convert encryptedData to binary
@@ -55,6 +56,62 @@ function decryptData(encryptedDataBase64Array, privateKeyPEM){
         }
     } catch (e) {
         return undefined;
+    }
+
+    return decryptedText;
+}
+
+function encryptDataPSK(thisText, thisKey, thisIV){
+    // thisKey and thisIV should be in Buffer format
+    var encryptedText;
+
+    try {
+        if (thisText && typeof(thisText === 'string') && thisText.length > 0 && thisKey){
+            const cipher = createCipheriv(SYMMETRIC_CIHPER, thisKey, thisIV);
+            // const cipher = createCipheriv(SYMMETRIC_CIHPER, thisKey, randomBytes(32));
+
+            encryptedText = cipher.update(thisText, 'utf8', 'base64');
+            encryptedText += cipher.final('base64')
+        }
+    } catch (e) {
+        console.error(e);
+    }
+
+    return encryptedText;
+}
+
+function decryptDataPassword(encryptedText, password, keyInfo){
+    // encryptedText = (String) base64 encrypted text from event
+    // password = (String) given password to convert into key
+    // keyInfo = (Object) provided salt and iv information in string hex format
+    // Will generateKey and call decryptDataPSK
+    var decryptedText;
+
+    if (encryptedText && typeof(encryptedText) === 'string' && password && typeof(password) &&
+    keyInfo && typeof(keyInfo) === 'object' && keyInfo.salt && typeof(keyInfo.salt) === 'string' &&
+    keyInfo.iv && typeof(keyInfo.iv) === 'string'){
+        const psk = crypto.scryptSync(password, Buffer.from(salt, 'hex'), 32);
+
+        decryptedText = decryptDataPSK(encryptedText, psk, Buffer.from(keyInfo.iv, 'hex', 16));
+    }
+
+    return decryptedText;
+}
+
+function decryptDataPSK(encryptedText, key, iv){
+    // encryptedText = (String) base64 encrypted text from event
+    // key = (Buffer) generated Key from password and salt
+    // iv = (Buffer) iv value
+    // Will decrypt using key and iv
+    var decryptedText;
+
+    try {
+        const decipher = crypto.createDecipheriv(SYMMETRIC_CIHPER, key, iv);
+
+        decryptedText = decipher.update(encryptedText, 'base64', 'utf8');
+        decryptedText += decipher.final('utf8');
+    } catch (e){
+        console.error(e);
     }
 
     return decryptedText;
@@ -109,7 +166,10 @@ function Der64ToPemPublic(DerB64String){
     return PemPublicKey;
 }
 
-module.exports.encryptData = encryptData;
-module.exports.decryptData = decryptData;
+module.exports.encryptData = encryptDataPublicKey;
+module.exports.decryptData = decryptDataPrivateKey;
 module.exports.generateMailKeyPair = generateMailKeyPair;
 module.exports.Der64ToPemPublic = Der64ToPemPublic;
+module.exports.encryptDataPSK = encryptDataPSK;
+module.exports.decryptDataPSK = decryptDataPSK;
+module.exports.decryptDataPassword = decryptDataPassword;

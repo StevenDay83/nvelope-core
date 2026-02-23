@@ -23,6 +23,7 @@ module.exports.BroadcastMessage = class BroadcastMessage {
         this.authorPubkey;
         this.password;
         this.passwordSalt;
+        this.passwordIV;
         this.preSharedKey;
         this.topic = '';
     }
@@ -43,6 +44,10 @@ module.exports.BroadcastMessage = class BroadcastMessage {
         if (thisSubject && typeof(thisSubject) === 'string'){
             this.subjectLine = thisSubject;
         }
+    }
+
+    setTopic(thisTopic){
+        this.topic = thisTopic && typeof(thisTopic) === 'string' ? thisTopic : '';
     }
 
     setReplyTo(thisReplyTo){
@@ -82,6 +87,7 @@ module.exports.BroadcastMessage = class BroadcastMessage {
         try {
             if (this.password && this.passwordSalt){
                 this.preSharedKey = crypto.scryptSync(this.password, Buffer.from(this.passwordSalt, 'hex'), 32);
+                this.passwordIV = crypto.randomBytes(16).toString('hex');;
             } else {
                 isSuccess = false;
             }
