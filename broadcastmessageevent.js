@@ -61,9 +61,9 @@ async function getBroadcastMessagesByNAddress(startTime, endTime, NAddress, defa
                 var relayList = nAddressJSON.relays && Array.isArray(nAddressJSON.relays) ? nAddressJSON.relays : defaultRelayList;
 
                 subscribedMessagesList = await getBroadcastMessages(startTime, endTime, author, password, topic, relayList);
-            }
+            } 
 
-            resolve(subscribedMessagesList);
+            callback ? callback(subscribedMessagesList, undefined) : resolve(subscribedMessagesList);
         } catch (e) {
             callback ? callback(undefined, e) : reject(e);
         }
