@@ -184,7 +184,7 @@ async function getEvents(criteria, relayList, callback) {
             } else {
                 var thisError = new Error("No relays specified");
                 callback ? callback(undefined, thisError) : void(0);
-                reject(e);
+                reject(thisError);
             }
         } catch (e) {
             callback ? callback(undefined, e) : void(0);
@@ -210,6 +210,25 @@ function getDTag(eventObject, valueNumber = 0){
     }
 
     return dTagValue;
+}
+
+function getTag(eventObject, tagLabel, valueNumber = 0){
+    var thisTagValue;
+
+    if (eventObject && typeof(eventObject) === 'object'){
+        if (eventObject.tags && Array.isArray(eventObject.tags)){
+            for (var i = 0; i < eventObject.tags.length; i++){
+                var thisTag = eventObject.tags[i];
+
+                if (thisTag.length > (valueNumber + 1) && thisTag[0] == tagLabel){
+                    thisTagValue = thisTag[valueNumber + 1];
+                    break;
+                }
+            }
+        }
+    }
+
+    return thisTagValue;
 }
 
 async function getNostrProfileEvent(pubkey, relayList, callback) {
@@ -320,3 +339,4 @@ module.exports.getNostrProfileEvent = getNostrProfileEvent;
 module.exports.getNostrContactRelayList = getNostrContactRelayList;
 module.exports.getRecipientPolicyForPubkey = getRecipientPolicyForPubkey;
 module.exports.getEvents = getEvents;
+module.exports.getTag = getTag;

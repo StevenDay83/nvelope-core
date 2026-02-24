@@ -118,6 +118,10 @@ module.exports.BroadcastMessage = class BroadcastMessage {
             formattedMessage["author"] = this.authorPubkey;
         }
 
+        if (this.topic) {
+            formattedMessage["topic"] = this.topic;
+        }
+
         var messageTypes = Object.keys(this.messageContent);
         if (messageTypes.length > 0){
             formattedMessage["messageType"] = {};

@@ -90,7 +90,7 @@ function decryptDataPassword(encryptedText, password, keyInfo){
     if (encryptedText && typeof(encryptedText) === 'string' && password && typeof(password) &&
     keyInfo && typeof(keyInfo) === 'object' && keyInfo.salt && typeof(keyInfo.salt) === 'string' &&
     keyInfo.iv && typeof(keyInfo.iv) === 'string'){
-        const psk = crypto.scryptSync(password, Buffer.from(salt, 'hex'), 32);
+        const psk = scryptSync(password, Buffer.from(keyInfo.salt, 'hex'), 32);
 
         decryptedText = decryptDataPSK(encryptedText, psk, Buffer.from(keyInfo.iv, 'hex', 16));
     }
@@ -106,7 +106,7 @@ function decryptDataPSK(encryptedText, key, iv){
     var decryptedText;
 
     try {
-        const decipher = crypto.createDecipheriv(SYMMETRIC_CIHPER, key, iv);
+        const decipher = createDecipheriv(SYMMETRIC_CIHPER, key, iv);
 
         decryptedText = decipher.update(encryptedText, 'base64', 'utf8');
         decryptedText += decipher.final('utf8');
