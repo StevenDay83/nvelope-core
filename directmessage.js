@@ -196,6 +196,8 @@ module.exports.DirectMessage = class DirectMessage {
     }
 
     importMessageEvent(messageEventObject){
+        var isSuccess = false;
+
         if (messageEventObject && typeof(messageEventObject) === 'object' && 
         (messageEventObject.id && messageEventObject.pubkey && messageEventObject.content && messageEventObject.created_at != undefined &&
             messageEventObject.sig
@@ -220,7 +222,10 @@ module.exports.DirectMessage = class DirectMessage {
 
             this.externalReferences = messageEventContent["external_references"] ? messageEventContent["external_references"] : [];
             this.messageThreadId = messageEventContent["thread_id"] ? messageEventContent["thread_id"] : '';
+
+            isSuccess = true;
         }
+        return isSuccess;
     }
 
     generateBCCMessages(){

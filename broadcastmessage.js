@@ -141,4 +141,48 @@ module.exports.BroadcastMessage = class BroadcastMessage {
 
         return formattedMessage;
     }
+
+    importMessage(broadcastMessageObject) {
+        var isSuccess = false;
+        try {
+            if (broadcastMessageObject && typeof(broadcastMessageObject) === 'object'){
+                
+                if (broadcastMessageObject.author) {
+                    this.authorPubkey = broadcastMessageObject.author;
+                }
+
+                if (broadcastMessageObject.topic) {
+                    this.topic = broadcastMessageObject.topic;
+                }
+
+                if (broadcastMessageObject.replyTo && broadcastMessageObject.replyTo.length > 0){
+                    this.replyTo = broadcastMessageObject.replyTo;
+                }
+
+                if (broadcastMessageObject.subjectLine && broadcastMessageObject.subjectLine.length > 0){
+                    this.subjectLine = broadcastMessageObject.subjectLine;
+                }
+
+                this.broadcastMessageType = broadcastMessageObject.broadcastMessageType != undefined && !isNaN(broadcastMessageObject.broadcastMessageType) ? 
+                broadcastMessageObject.broadcastMessageType : DEFAULT;
+
+                if (broadcastMessageObject.messageType && typeof(broadcastMessageObject.messageType) === 'object'){
+                    var messageTypes = Object.keys(broadcastMessageObject.messageType);
+
+                    for (var i = 0; i < messageTypes.length; i++){
+                        this.messageContent[messageTypes[i]] = broadcastMessageObject.messageType[messageTypes[i]] ? 
+                        Buffer.from(broadcastMessageObject.messageType[messageTypes[i]], 'base64').toString() : ''
+                    }
+                }
+
+                this.externalReferences = broadcastMessageObject["external_references"] ? broadcastMessageObject["external_references"] : [];
+
+                isSuccess = true;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        return isSuccess;
+    }
 }
