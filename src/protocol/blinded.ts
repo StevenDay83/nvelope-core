@@ -236,10 +236,14 @@ export async function createBroadcastEnvelopeEvent(
 }
 
 /**
- * Mine (without signing) a broadcast envelope for a message. `authorPubkey`
- * is baked into the template (subscribers find lists by author); sign the
- * returned unsigned event with the author's key and verify the result still
- * meets the PoW target.
+ * Build (and, only when explicitly requested, mine) a broadcast envelope.
+ * `authorPubkey` is baked into the template (subscribers find lists by
+ * author); sign the returned unsigned event with the author's key.
+ *
+ * Per SPEC §2.1 broadcast envelopes do NOT use proof-of-work: the default
+ * path adds no `nonce` tag and performs no mining. An explicit
+ * `target`/`leadingZeros` option is honoured as a non-standard extension for
+ * experimentation; conforming producers leave it unset.
  */
 export async function mineBroadcastEnvelopeEvent(
   message: BroadcastMessage,
@@ -251,20 +255,20 @@ export async function mineBroadcastEnvelopeEvent(
   const iv = randomBytes(SYMMETRIC_IV_BYTES)
   const ciphertext = encryptSymmetric(message.toJson(), keyMaterial.key, iv)
   const keyInfo: KeyInfoWire = { salt: keyMaterial.salt, iv: iv.toString('hex') }
-  const unsigned = await mineEnvelopeTemplate(
-    {
-      kind: NVELOPE_EVENT_KIND,
-      created_at: nowSeconds(),
-      pubkey: authorPubkey,
-      tags: [
-        [LABEL_TAG, LABEL_BROADCAST_MESSAGE],
-        [KEY_INFO_TAG, JSON.stringify(keyInfo)],
-      ],
-      content: ciphertext,
-    },
-    options,
-  )
-  return { unsigned, keyInfo }
+  const template: MinedTemplate = {
+    kind: NVELOPE_EVENT_KIND,
+    created_at: nowSeconds(),
+    pubkey: authorPubkey,
+    tags: [
+      [LABEL_TAG, LABEL_BROADCAST_MESSAGE],
+      [KEY_INFO_TAG, JSON.stringify(keyInfo)],
+    ],
+    content: ciphertext,
+  }
+  if (options.target !== undefined || options.leadingZeros !== undefined) {
+    return { unsigned: await mineEnvelopeTemplate(template, options), keyInfo }
+  }
+  return { unsigned: template, keyInfo }
 }
 
 /* ------------------------------------------------------------------------ */

@@ -162,14 +162,13 @@ describe('createBroadcastEnvelopeEvent (author-signed, key_info, private topics)
       .setSubject('v2 is live')
       .setPlaintext('read the changelog')
 
-    const { event, keyInfo } = await createBroadcastEnvelopeEvent(broadcast, authorKey, keyMaterial, {
-      leadingZeros: 8,
-    })
+    const { event, keyInfo } = await createBroadcastEnvelopeEvent(broadcast, authorKey, keyMaterial)
 
     // Signed by the author (not blinded): subscribers find lists by author.
     expect(event.pubkey).toBe(publicKeyOf(authorKey))
     expect(verifyEnvelopeSignature(event)).toBe(true)
-    expect(envelopeMeetsPow(event, targetFromLeadingZeros(8))).toBe(true)
+    // SPEC §2.1: broadcast envelopes carry no PoW and no nonce tag.
+    expect(getTagValue(event, 'nonce')).toBeUndefined()
 
     // Privacy: no topic or password anywhere in the event.
     expect(getTagValue(event, 'l')).toBe('broadcast_message')
@@ -190,6 +189,18 @@ describe('createBroadcastEnvelopeEvent (author-signed, key_info, private topics)
     expect(openBroadcastMessageWithKey(event, keyMaterial.key)?.getPlaintext()).toBe(
       'read the changelog',
     )
+  })
+
+  it('an explicit PoW option is honoured as a non-standard extension', async () => {
+    const authorKey = generateSecretKey()
+    const keyMaterial = generateBroadcastKey('pw')
+    const broadcast = new BroadcastMessage().setAuthor(publicKeyOf(authorKey)).setPlaintext('x')
+
+    const { event } = await createBroadcastEnvelopeEvent(broadcast, authorKey, keyMaterial, {
+      leadingZeros: 8,
+    })
+    expect(getTagValue(event, 'nonce')).toMatch(/^[0-9]+$/)
+    expect(envelopeMeetsPow(event, targetFromLeadingZeros(8))).toBe(true)
   })
 
   it('produces a fresh IV per event under the same key', async () => {

@@ -107,10 +107,8 @@ export interface ProfileHealth {
 
 export interface PublishBroadcastOptions {
   relays?: string[]
-  onProgress?: (attempts: number) => void
-  signal?: AbortSignal
-  /** Explicit PoW target; default: no additional PoW beyond protocol needs. */
-  leadingZeros?: number
+  // Broadcast envelopes carry no PoW (SPEC §2.1); there is nothing to
+  // progress-report or cancel on this path.
 }
 
 export class NvelopeClient {
@@ -497,11 +495,6 @@ export class NvelopeClient {
       message,
       authorPubkey,
       keyMaterial,
-      {
-        leadingZeros: options.leadingZeros ?? 0,
-        onProgress: options.onProgress,
-        signal: options.signal,
-      },
     )
     const event = await this.signer.signEvent(unsigned)
     if (event.pubkey !== authorPubkey) {

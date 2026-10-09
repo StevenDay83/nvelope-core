@@ -70,7 +70,10 @@ senders mine; recipients compare and decrypt.
 |---|---|---|
 | `l` | `broadcast_message` | MUST |
 | `key_info` | JSON `{"salt": <64-hex>, "iv": <32-hex>}` | MUST |
-| `nonce` | decimal-string nonce (when PoW is applied) | MAY |
+
+Broadcast envelopes MUST NOT carry proof-of-work and MUST NOT have a `nonce`
+tag: subscription via the naddr credential is the anti-spam mechanism (§9),
+so there is nothing for PoW to price.
 
 **Inner direct-message event:** no tags. (Replies and threading are carried
 in the encrypted body, not in tags; see §3.1.)
@@ -341,6 +344,8 @@ body. The `key_info` tag carries `{"salt", "iv"}` (§2.1).
   CBC vulnerability and is prohibited.
 - Neither the password nor the topic appears in any tag or plaintext-visible
   field. Discovery and interest filtering are client-side, after decryption.
+- No proof-of-work is applied (§2.1); the event is signed and published
+  directly.
 
 ### 9.2 Credentials (naddr)
 
@@ -481,6 +486,10 @@ these corrections are normative for v1:
 5. **Signature-checked profile import**, absent-vs-corrupt semantics (§13),
    post-decryption policy validation (§8), and receipt-validation reporting
    are new in v1.
+6. The rebuild initially ran broadcast envelopes through the same mining
+   machinery as direct envelopes, emitting a trivially-mined `nonce` tag.
+   Removed: the original wire shape had none, and opt-in subscription makes
+   PoW meaningless for broadcast.
 
 ## Appendix C — Reference implementation map
 

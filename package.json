@@ -1,6 +1,6 @@
 {
   "name": "nvelope-core",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "TypeScript library implementing the Nostr-Mail protocol for nVelope clients",
   "license": "MIT",
   "author": "Steven Day",
@@ -32,7 +32,8 @@
     "demo:offline": "tsx examples/demo-offline.ts",
     "demo:relay": "tsx examples/demo-relay.ts",
     "demo:setup": "tsx examples/demo-setup.ts",
-    "docs": "typedoc --out docs/api --name nvelope-core src/index.ts"
+    "docs": "typedoc --out docs/api --name nvelope-core src/index.ts",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "nostr",
